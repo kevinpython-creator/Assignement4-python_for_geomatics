@@ -25,6 +25,7 @@ def combinations(l):
 SOLAR_MASS = 4 * PI * PI
 DAYS_PER_YEAR = 365.24
 
+# ([x,y,z] [vx,vy,vz], solar mass)
 BODIES = {
     "sun": ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], SOLAR_MASS),
     "jupiter": (
@@ -68,9 +69,12 @@ BODIES = {
 SYSTEM = tuple(BODIES.values())
 PAIRS = tuple(combinations(SYSTEM))
 
-
+#  Updates PAIRS and SYSTEM
 def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
     for i in range(n):
+        count = 0
+        with open("py3Dpos.csv", "a") as file:
+            file.write("-----------step {}\n".format(i + 1))
         for ([x1, y1, z1], v1, m1, [x2, y2, z2], v2, m2) in pairs:
             dx = x1 - x2
             dy = y1 - y2
@@ -86,10 +90,18 @@ def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
             v2[1] += dy * b1m
             v2[0] += dx * b1m
         for (r, [vx, vy, vz], m) in bodies:
+            # Write body name and coordinates to file
             r[0] += dt * vx
             r[1] += dt * vy
             r[2] += dt * vz
-
+            name = list(BODIES)[count]
+            x = r[0]
+            y = r[1]
+            z = r[2]
+            text = "{}, {}, {}, {};\n".format(name, x, y, z)
+            with open("py3Dpos.csv", "a") as file:
+                file.write(text)
+            count += 1
 
 def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
     for ((x1, y1, z1), v1, m1, (x2, y2, z2), v2, m2) in pairs:
@@ -101,7 +113,7 @@ def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
         e += m * (vx * vx + vy * vy + vz * vz) / 2.0
     print("Energy: %.9f" % e)
 
-
+# Changes the velocity in SYSTEM
 def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
     for (r, [vx, vy, vz], m) in bodies:
         px -= vx * m
@@ -114,6 +126,14 @@ def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
 
 
 def main(n, ref="sun"):
+    colnames = "{}, {}, {}, {};\n".format("bodyname", "x-coordinate", "y-coordinate", "z-coordinate")
+    with open("py3Dpos.csv","w") as file:
+        file.write(colnames)
+        file.write("-----------original values\n")
+        for i in list(BODIES):
+            text = "{}, {}, {}, {};\n".format(i, BODIES[i][0][0], BODIES[i][0][0], BODIES[i][0][0])
+            file.write(text)
+
     offset_momentum(BODIES[ref])
     report_energy()
     advance(0.01, n)
